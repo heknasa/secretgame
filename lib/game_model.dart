@@ -154,6 +154,24 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
       } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
         selectedAnswer = alphabets[3];
       } 
+
+      if (hasAnswered == false && selectedAnswer == answers[0]) {
+        countdown.pause();
+        points++;
+        hasAnswered = true;
+      } else if (
+        hasAnswered == false 
+        && selectedAnswer != answers[0]
+        && (selectedAnswer == alphabets[0]
+        || selectedAnswer == alphabets[1]
+        || selectedAnswer == alphabets[2]
+        || selectedAnswer == alphabets[3])
+      ) {
+        countdown.pause();
+        overlays.remove(QuestionBox.id);
+        overlays.add(GameOver.id);
+        hasAnswered = true;
+      }
       
       if (selectedAnswer == answers[0] && event.logicalKey == LogicalKeyboardKey.enter) {
         overlays.remove(QuestionBox.id);
