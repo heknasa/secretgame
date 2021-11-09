@@ -88,7 +88,6 @@ class Player extends SpriteAnimationComponent with HasGameRef, Hitbox, Collidabl
   void onCollision(Set<Vector2> intersectionPoints, Collidable other) {
     if (other is Enemy || other is WorldCollision) {
       if (!hasCollided) {
-        print('collided');
         hasCollided = true;
         collisionDirection = direction;
       }

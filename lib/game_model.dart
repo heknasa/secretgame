@@ -19,6 +19,7 @@ import 'data/quiz.dart';
 class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
   final Player _player = Player();
   List<Enemy> enemies = [];
+  List<Enemy> diedEnemies = [];
   int? index;
   List<Vector2> enemySpawn = [
     Vector2(400, 300),
@@ -80,9 +81,9 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
 
   void reset() {
     remove(_player);
-    removeAll(enemies);
     add(_player..position = size * 0.5);
-    addAll(enemies);
+    enemies.addAll(diedEnemies);
+    addAll(diedEnemies);
     camera.followComponent(
       _player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
@@ -153,7 +154,6 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
         } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
           selectedAnswer = alphabets[3];
         } 
-
         if (hasAnswered == false && selectedAnswer == answers[index!]) {
           countdown.pause();
           points++;
@@ -170,16 +170,18 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
           overlays.remove(QuestionBox.id);
           overlays.add(GameOver.id);
           hasAnswered = true;
-        }
-        
+        }        
         if (selectedAnswer == answers[index!] && event.logicalKey == LogicalKeyboardKey.enter) {
           countdown.stop();
           overlays.remove(QuestionBox.id);
+          diedEnemies.add(enemies[index!]);
           remove(enemies[index!]);
+          enemies.removeAt(index!);
           _player.hasCollided = false;
           questionShowsUp = false;
           hasAnswered = false;
           selectedAnswer = null;
+          index = null;
         }
       }
     }
