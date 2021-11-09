@@ -1,12 +1,12 @@
 import 'package:flame/components.dart';
 import 'package:flame/geometry.dart';
-import '../helpers/direction.dart';
 import 'package:flame/sprite.dart';
 
 class Enemy extends SpriteAnimationComponent with HasGameRef, Hitbox, Collidable {
-  Enemy() : super(size: Vector2.all(50.0)) {
+  Enemy(this.enemyNumber) : super(size: Vector2.all(50.0)) {
     addHitbox(HitboxRectangle());
   }
+  final int? enemyNumber;
   final double _animationSpeed = 0.10;
   late final SpriteAnimation _standUpAnimation;
 

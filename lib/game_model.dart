@@ -17,9 +17,10 @@ import 'components/world.dart';
 import 'data/quiz.dart';
 
 class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
-  Player _player = Player();
-  Enemy _enemy = Enemy();
-  final List<Vector2> enemySpawn = [
+  final Player _player = Player();
+  List<Enemy> enemies = [];
+  int? index;
+  List<Vector2> enemySpawn = [
     Vector2(400, 300),
     Vector2(400, 500),
     Vector2(400, 700),
@@ -40,12 +41,11 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
   Future<void> onLoad() async {
     super.onLoad();
     await add(_world);
-    add(_player);
-    addAll(List.generate(enemySpawn.length, (i) =>
-      Enemy()
-        ..position = enemySpawn[i]
-        // ..questionNumber = questions[i]
-    ));
+    add(_player..position = size * 0.5);
+    for (var i = 0; i < enemySpawn.length; i++) {
+      enemies.add(Enemy(i)..position = enemySpawn[i]);
+    }
+    addAll(enemies);
     addWorldCollision();
     camera.followComponent(
       _player, 
@@ -80,20 +80,18 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
 
   void reset() {
     remove(_player);
-    remove(_enemy);
-    _player = Player();
-    _enemy = Enemy();
-    countdown = Timer(10);
-    questionShowsUp = false;
-    selectedAnswer = null;
-    hasAnswered = false;
-    points = 0;
-    add(_player);
-    add(_enemy);
+    removeAll(enemies);
+    add(_player..position = size * 0.5);
+    addAll(enemies);
     camera.followComponent(
       _player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
+    countdown = Timer(10);
+    points = 0;
+    questionShowsUp = false;
+    hasAnswered = false;
+    selectedAnswer = null;
   }
 
   void addWorldCollision() async => (
@@ -135,49 +133,54 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
       _player.direction = PlayerDirection.noneRight;
     }
 
-    if (event.logicalKey == LogicalKeyboardKey.space
-      && _player.position.distanceToSquared(_enemy.position) < 12000.0
-      && hasAnswered == false
-    ) {
-      overlays.add(QuestionBox.id);
-      questionShowsUp = true;
-      countdown.start();
-    }
-
-    if (questionShowsUp == true) {
-      if (event.logicalKey == LogicalKeyboardKey.keyA && hasAnswered == false) {
-        selectedAnswer = alphabets[0];
-      } else if (event.logicalKey == LogicalKeyboardKey.keyB && hasAnswered == false) {
-        selectedAnswer = alphabets[1];
-      } else if (event.logicalKey == LogicalKeyboardKey.keyC && hasAnswered == false) {
-        selectedAnswer = alphabets[2];
-      } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
-        selectedAnswer = alphabets[3];
-      } 
-
-      if (hasAnswered == false && selectedAnswer == answers[0]) {
-        countdown.pause();
-        points++;
-        hasAnswered = true;
-      } else if (
-        hasAnswered == false 
-        && selectedAnswer != answers[0]
-        && (selectedAnswer == alphabets[0]
-        || selectedAnswer == alphabets[1]
-        || selectedAnswer == alphabets[2]
-        || selectedAnswer == alphabets[3])
+    for (var i = 0; i < enemies.length; i++) {
+      if (event.logicalKey == LogicalKeyboardKey.space
+        && _player.position.distanceToSquared(enemies[i].position) < 12000.0
+        && hasAnswered == false
       ) {
-        countdown.pause();
-        overlays.remove(QuestionBox.id);
-        overlays.add(GameOver.id);
-        hasAnswered = true;
+        index = i;
+        overlays.add(QuestionBox.id);
+        questionShowsUp = true;
+        countdown.start();
       }
-      
-      if (selectedAnswer == answers[0] && event.logicalKey == LogicalKeyboardKey.enter) {
-        overlays.remove(QuestionBox.id);
-        remove(_enemy);
-        _player.hasCollided = false;
-        countdown.stop();
+      if (questionShowsUp == true) {
+        if (event.logicalKey == LogicalKeyboardKey.keyA && hasAnswered == false) {
+          selectedAnswer = alphabets[0];
+        } else if (event.logicalKey == LogicalKeyboardKey.keyB && hasAnswered == false) {
+          selectedAnswer = alphabets[1];
+        } else if (event.logicalKey == LogicalKeyboardKey.keyC && hasAnswered == false) {
+          selectedAnswer = alphabets[2];
+        } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
+          selectedAnswer = alphabets[3];
+        } 
+
+        if (hasAnswered == false && selectedAnswer == answers[index!]) {
+          countdown.pause();
+          points++;
+          hasAnswered = true;
+        } else if (
+          hasAnswered == false 
+          && selectedAnswer != answers[index!]
+          && (selectedAnswer == alphabets[0]
+          || selectedAnswer == alphabets[1]
+          || selectedAnswer == alphabets[2]
+          || selectedAnswer == alphabets[3])
+        ) {
+          countdown.pause();
+          overlays.remove(QuestionBox.id);
+          overlays.add(GameOver.id);
+          hasAnswered = true;
+        }
+        
+        if (selectedAnswer == answers[index!] && event.logicalKey == LogicalKeyboardKey.enter) {
+          countdown.stop();
+          overlays.remove(QuestionBox.id);
+          remove(enemies[index!]);
+          _player.hasCollided = false;
+          questionShowsUp = false;
+          hasAnswered = false;
+          selectedAnswer = null;
+        }
       }
     }
     return super.onKeyEvent(event, keysPressed);

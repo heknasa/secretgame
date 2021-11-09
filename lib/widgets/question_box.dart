@@ -22,16 +22,16 @@ class QuestionBox extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Text('Pertanyaan #1'),
+              child: Text('Pertanyaan #' + (gameRef.index! + 1).toString()),
             ),
             SizedBox(height: 20.0),
-            Text(questions[0]),
+            Text(questions[gameRef.index!]),
             SizedBox(height: 20.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var i = 0; i < 4; i++)
-                  Text(alphabets[i] + '. ' + choices[0][i])
+                  Text(alphabets[i] + '. ' + choices[gameRef.index!][i])
               ]
             )
           ],

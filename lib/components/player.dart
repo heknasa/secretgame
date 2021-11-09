@@ -42,7 +42,6 @@ class Player extends SpriteAnimationComponent with HasGameRef, Hitbox, Collidabl
       image: await gameRef.images.load('player_spritesheet.png'),
       srcSize: Vector2(29.0, 32.0)
     );
-    position = gameRef.size * 0.25;
     _runUpAnimation = spriteSheet.createAnimation(
       row: 2,
       stepTime: _animationSpeed,
@@ -89,6 +88,7 @@ class Player extends SpriteAnimationComponent with HasGameRef, Hitbox, Collidabl
   void onCollision(Set<Vector2> intersectionPoints, Collidable other) {
     if (other is Enemy || other is WorldCollision) {
       if (!hasCollided) {
+        print('collided');
         hasCollided = true;
         collisionDirection = direction;
       }
