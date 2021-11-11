@@ -6,12 +6,7 @@ List<String> questions = [
   'Siapakah pembuat web-app Sudah Muda?'
 ];
 
-List<String> alphabets = [
-  'A',
-  'B',
-  'C',
-  'D'
-];
+List<String> alphabets = ['A', 'B', 'C', 'D'];
 
 List<List<String>> choices = [
   ['Soekarno', 'Soeharto', 'Habibie', 'Gus Dur'],
@@ -22,9 +17,13 @@ List<List<String>> choices = [
 ];
 
 List<String> answers = [
-  'A',
-  'A',
-  'C',
-  'B',
-  'A'
+  'Soekarno',
+  '8.400',
+  'keangkuhan',
+  'Java',
+  'Anggoran'
 ];
+
+void shuffleChoices(int index) {
+  choices[index].shuffle();
+}

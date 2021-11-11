@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:goran_game/data/quiz.dart';
-import '../game_model.dart';
+import '../game_core.dart';
 
 class QuestionBox extends StatelessWidget {
   static const id = 'question';
-  final GameModel gameRef;
+  final GameCore gameRef;
   const QuestionBox(this.gameRef, {Key? key}) : super(key: key);
 
   @override
@@ -17,21 +20,29 @@ class QuestionBox extends StatelessWidget {
         ),
         padding: EdgeInsets.all(20.0),
         width: 200.0,
-        height: 200.0,
+        height: 240.0,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Text('Pertanyaan #' + (gameRef.index! + 1).toString()),
+              child: Text('TIME')
+            ),
+            SizedBox(height: 5.0),
+            Center(
+              child: Obx(() => Text('${gameRef.quizTime.value.round()}'))
+            ),
+            SizedBox(height: 10.0),
+            Center(
+              child: Text('Pertanyaan #' + (gameRef.enemies[gameRef.index!].enemyNumber! + 1).toString()),
             ),
             SizedBox(height: 20.0),
-            Text(questions[gameRef.index!]),
+            Text(questions[gameRef.random!]),
             SizedBox(height: 20.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (var i = 0; i < 4; i++)
-                  Text(alphabets[i] + '. ' + choices[gameRef.index!][i])
+                for (var i = 0; i < alphabets.length; i++)
+                  Text(alphabets[i] + '. ' + choices[gameRef.random!][i])
               ]
             )
           ],

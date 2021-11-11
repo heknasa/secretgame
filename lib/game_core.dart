@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -8,19 +9,24 @@ import 'package:flutter/services.dart';
 import 'package:goran_game/components/world_collision.dart';
 import 'package:goran_game/data/quiz.dart';
 import 'package:goran_game/helpers/map_loader.dart';
-import 'package:goran_game/widgets/game_over.dart';
+import 'package:goran_game/widgets/popup_dialog.dart';
 import 'package:goran_game/widgets/question_box.dart';
 import '../components/player.dart';
 import '../helpers/direction.dart';
 import 'components/enemy.dart';
 import 'components/world.dart';
 import 'data/quiz.dart';
+import 'package:get/get.dart';
 
-class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
+class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
   final Player _player = Player();
   List<Enemy> enemies = [];
   List<Enemy> diedEnemies = [];
+  List<String> passedQuestions = [];
+  List<List<String>> passedChoices = [];
+  List<String> passedAnswers = [];
   int? index;
+  int? random;
   List<Vector2> enemySpawn = [
     Vector2(400, 300),
     Vector2(400, 500),
@@ -29,14 +35,15 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
     Vector2(400, 1100),
   ];
   final World _world = World();
-  Timer countdown = Timer(10);
   bool questionShowsUp = false;
   String? selectedAnswer;
   bool hasAnswered = false;
-  int points = 0;
-  TextPaint textPaint = TextPaint(
-    config: TextPaintConfig(color: Colors.white)
-  );
+  Timer roundCountdown = Timer(10.0 * 5 * 1.5);
+  Timer quizCountdown = Timer(10.0);
+  String? popUpTitle;
+  var roundTime = Rx<double>(10.0 * 5 * 1.5);
+  var quizTime = Rx<double>(10.0);
+  var points = 0.obs;
 
   @override
   Future<void> onLoad() async {
@@ -52,31 +59,36 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
       _player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
+    popUpTitle = 'Ready?';  
+    overlays.add(PopUpDialog.id);
   }
 
   @override
-  void update(double dt) {
-    countdown.update(dt);
-    super.update(dt);
-    if (countdown.finished && hasAnswered == false) {
-      overlays.remove(QuestionBox.id);
-      overlays.add(GameOver.id);
+  void update(double dt) {    
+    if (roundCountdown.isRunning()) {
+      roundTime -= dt;
+    } else if (roundCountdown.finished) {
+      roundCountdown.stop();
     }
-  }
-  
-  @override
-  void render(Canvas canvas) {
-    textPaint.render(
-      canvas,
-      (countdown.limit - countdown.current).round().toString(),
-      Vector2(0.0, 0.0),
-    );
-    textPaint.render(
-      canvas,
-      points.toString(),
-      Vector2(size.x / 2, 0)
-    );
-    super.render(canvas);
+    if (quizCountdown.isRunning()) {
+      quizTime -= dt;
+    } else if (quizCountdown.finished) {
+      quizCountdown.stop();
+    }
+    roundCountdown.update(dt);
+    quizCountdown.update(dt);          
+    super.update(dt);
+    if ((roundCountdown.finished || quizCountdown.finished) && hasAnswered == false) {
+      popUpTitle = 'game over...';
+      roundCountdown.pause();
+      overlays.remove(QuestionBox.id);
+      overlays.add(PopUpDialog.id);
+    }
+    if (enemies.isEmpty) {
+      popUpTitle = 'YOU WIN!!\nPlay Again?';
+      roundCountdown.pause();
+      overlays.add(PopUpDialog.id);
+    }
   }
 
   void reset() {
@@ -84,15 +96,22 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
     add(_player..position = size * 0.5);
     enemies.addAll(diedEnemies);
     addAll(diedEnemies);
+    questions.addAll(passedQuestions);
+    choices.addAll(passedChoices);
+    answers.addAll(passedAnswers);
     camera.followComponent(
       _player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
-    countdown = Timer(10);
-    points = 0;
+    roundTime.value = 10.0 * 5 * 1.5;
+    roundCountdown.start();
+    quizTime.value = 10.0;
+    points.value = 0;
     questionShowsUp = false;
     hasAnswered = false;
     selectedAnswer = null;
+    index = null;
+    random = null;
   }
 
   void addWorldCollision() async => (
@@ -102,7 +121,7 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
       ..position = Vector2(rect.left, rect.top)
       ..width = rect.width
       ..height = rect.height);
-  });
+  });  
 
   @override
   KeyEventResult onKeyEvent(
@@ -134,54 +153,66 @@ class GameModel extends FlameGame with KeyboardEvents, HasCollidables {
       _player.direction = PlayerDirection.noneRight;
     }
 
-    for (var i = 0; i < enemies.length; i++) {
+    for (var i = 0; i < enemies.length; i++) {      
       if (event.logicalKey == LogicalKeyboardKey.space
         && _player.position.distanceToSquared(enemies[i].position) < 12000.0
-        && hasAnswered == false
+        && questionShowsUp == false
       ) {
         index = i;
+        random = Random().nextInt(questions.length);
+        shuffleChoices(random!);
         overlays.add(QuestionBox.id);
         questionShowsUp = true;
-        countdown.start();
+        quizCountdown.start();
       }
       if (questionShowsUp == true) {
         if (event.logicalKey == LogicalKeyboardKey.keyA && hasAnswered == false) {
-          selectedAnswer = alphabets[0];
+          selectedAnswer = choices[random!][0];
         } else if (event.logicalKey == LogicalKeyboardKey.keyB && hasAnswered == false) {
-          selectedAnswer = alphabets[1];
+          selectedAnswer = choices[random!][1];
         } else if (event.logicalKey == LogicalKeyboardKey.keyC && hasAnswered == false) {
-          selectedAnswer = alphabets[2];
+          selectedAnswer = choices[random!][2];
         } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
-          selectedAnswer = alphabets[3];
+          selectedAnswer = choices[random!][3];
         } 
-        if (hasAnswered == false && selectedAnswer == answers[index!]) {
-          countdown.pause();
+        if (hasAnswered == false && selectedAnswer == answers[random!]) {
+          quizCountdown.pause();
           points++;
           hasAnswered = true;
         } else if (
           hasAnswered == false 
-          && selectedAnswer != answers[index!]
-          && (selectedAnswer == alphabets[0]
-          || selectedAnswer == alphabets[1]
-          || selectedAnswer == alphabets[2]
-          || selectedAnswer == alphabets[3])
+          && selectedAnswer != answers[random!]
+          && (selectedAnswer == choices[random!][0]
+          || selectedAnswer == choices[random!][1]
+          || selectedAnswer == choices[random!][2]
+          || selectedAnswer == choices[random!][3])
         ) {
-          countdown.pause();
+          popUpTitle = 'game over...';
+          roundCountdown.pause();
+          quizCountdown.pause();
           overlays.remove(QuestionBox.id);
-          overlays.add(GameOver.id);
+          overlays.add(PopUpDialog.id);
           hasAnswered = true;
         }        
-        if (selectedAnswer == answers[index!] && event.logicalKey == LogicalKeyboardKey.enter) {
-          countdown.stop();
+        if (selectedAnswer == answers[random!] && event.logicalKey == LogicalKeyboardKey.enter) {
+          quizCountdown.stop();
           overlays.remove(QuestionBox.id);
           diedEnemies.add(enemies[index!]);
+          passedQuestions.add(questions[random!]);
+          passedChoices.add(choices[random!]);
+          passedAnswers.add(answers[random!]);
           remove(enemies[index!]);
           enemies.removeAt(index!);
+          questions.removeAt(random!);
+          choices.removeAt(random!);
+          answers.removeAt(random!);
+          quizTime = Rx<double>(10.0);
           _player.hasCollided = false;
           questionShowsUp = false;
           hasAnswered = false;
           selectedAnswer = null;
           index = null;
+          random = null;
         }
       }
     }
