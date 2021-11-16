@@ -6,5 +6,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Flame.device.fullScreen();
 
-  runApp(const GameScreen());
+  runApp(
+    const MaterialApp(
+       home: GameScreen(),
+    )
+  );
 }

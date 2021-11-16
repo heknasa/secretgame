@@ -5,13 +5,19 @@ import 'package:get/get.dart';
 import 'package:goran_game/data/quiz.dart';
 import '../game_core.dart';
 
-class QuestionBox extends StatelessWidget {
+class QuestionBox extends StatefulWidget {
   static const id = 'question';
   final GameCore gameRef;
-  const QuestionBox(this.gameRef, {Key? key}) : super(key: key);
+  const QuestionBox(this.gameRef, {Key? key}) : super(key: key);  
 
   @override
-  Widget build(BuildContext context) {
+  State<QuestionBox> createState() => QuestionBoxState();
+}
+
+class QuestionBoxState extends State<QuestionBox> {
+  var answerIsCorrect = false.obs;
+  @override
+  Widget build(BuildContext context) {    
     return Center(
       child: Container(
         decoration: BoxDecoration(
@@ -29,21 +35,28 @@ class QuestionBox extends StatelessWidget {
             ),
             SizedBox(height: 5.0),
             Center(
-              child: Obx(() => Text('${gameRef.quizTime.value.round()}'))
+              child: Obx(() => Text('${widget.gameRef.quizTime.value.round()}'))
             ),
             SizedBox(height: 10.0),
             Center(
-              child: Text('Pertanyaan #' + (gameRef.enemies[gameRef.index!].enemyNumber! + 1).toString()),
+              child: Text('Pertanyaan #' + (widget.gameRef.enemies[widget.gameRef.index!].enemyNumber! + 1).toString()),
             ),
             SizedBox(height: 20.0),
-            Text(questions[gameRef.random!]),
+            Text(questions[widget.gameRef.random!]),
             SizedBox(height: 20.0),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (var i = 0; i < alphabets.length; i++)
-                  Text(alphabets[i] + '. ' + choices[gameRef.random!][i])
+                  Text(alphabets[i] + '. ' + choices[widget.gameRef.random!][i])
               ]
+            ),
+            Obx(() => answerIsCorrect.value == true
+            ? ElevatedButton(
+              onPressed: () {},
+              child: Text('Next')
+            )
+            : SizedBox()
             )
           ],
         ),

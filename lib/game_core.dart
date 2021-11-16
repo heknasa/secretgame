@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -9,7 +10,9 @@ import 'package:flutter/services.dart';
 import 'package:goran_game/components/world_collision.dart';
 import 'package:goran_game/data/quiz.dart';
 import 'package:goran_game/helpers/map_loader.dart';
+import 'package:goran_game/widgets/answer_pad.dart';
 import 'package:goran_game/widgets/popup_dialog.dart';
+import 'package:goran_game/widgets/qnapad.dart';
 import 'package:goran_game/widgets/question_box.dart';
 import '../components/player.dart';
 import '../helpers/direction.dart';
@@ -18,8 +21,8 @@ import 'components/world.dart';
 import 'data/quiz.dart';
 import 'package:get/get.dart';
 
-class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
-  final Player _player = Player();
+class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, HasCollidables {
+  final Player player = Player();
   List<Enemy> enemies = [];
   List<Enemy> diedEnemies = [];
   List<String> passedQuestions = [];
@@ -35,6 +38,8 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
     Vector2(400, 1100),
   ];
   final World _world = World();
+  bool gamerIsOnMobile = false;
+  bool gamerIsOnPC = false;
   bool questionShowsUp = false;
   String? selectedAnswer;
   bool hasAnswered = false;
@@ -49,14 +54,14 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
   Future<void> onLoad() async {
     super.onLoad();
     await add(_world);
-    add(_player..position = size * 0.5);
+    add(player..position = size * 0.5);
     for (var i = 0; i < enemySpawn.length; i++) {
       enemies.add(Enemy(i)..position = enemySpawn[i]);
     }
     addAll(enemies);
     addWorldCollision();
     camera.followComponent(
-      _player, 
+      player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
     popUpTitle = 'Ready?';  
@@ -78,7 +83,7 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
     roundCountdown.update(dt);
     quizCountdown.update(dt);          
     super.update(dt);
-    if ((roundCountdown.finished || quizCountdown.finished) && hasAnswered == false) {
+    if ((roundCountdown.finished) || (quizCountdown.finished && hasAnswered == false)) {
       popUpTitle = 'game over...';
       roundCountdown.pause();
       overlays.remove(QuestionBox.id);
@@ -92,15 +97,16 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
   }
 
   void reset() {
-    remove(_player);
-    add(_player..position = size * 0.5);
+    overlays.remove(PopUpDialog.id);
+    remove(player);
+    add(player..position = size * 0.5);
     enemies.addAll(diedEnemies);
     addAll(diedEnemies);
     questions.addAll(passedQuestions);
     choices.addAll(passedChoices);
     answers.addAll(passedAnswers);
     camera.followComponent(
-      _player, 
+      player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
     roundTime.value = 10.0 * 5 * 1.5;
@@ -121,7 +127,7 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
       ..position = Vector2(rect.left, rect.top)
       ..width = rect.width
       ..height = rect.height);
-  });  
+  });
 
   @override
   KeyEventResult onKeyEvent(
@@ -131,56 +137,60 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
     final isKeyDown = event is RawKeyDownEvent;
     PlayerDirection? keyDirection;
 
-    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-      keyDirection = PlayerDirection.up;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-      keyDirection = PlayerDirection.down;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-      keyDirection = PlayerDirection.left;
-    } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-      keyDirection = PlayerDirection.right;
-    }
+    // nanti ganti sama onPC
+    if (gamerIsOnMobile == true) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        keyDirection = PlayerDirection.up;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        keyDirection = PlayerDirection.down;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+        keyDirection = PlayerDirection.left;
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+        keyDirection = PlayerDirection.right;
+      }
 
-    if (isKeyDown && keyDirection != null) {
-      _player.direction = keyDirection;
-    } else if (_player.direction == PlayerDirection.up) {
-      _player.direction = PlayerDirection.noneUp;
-    } else if (_player.direction == PlayerDirection.down) {
-      _player.direction = PlayerDirection.noneDown;
-    } else if (_player.direction == PlayerDirection.left) {
-      _player.direction = PlayerDirection.noneLeft;
-    } else if (_player.direction == PlayerDirection.right) {
-      _player.direction = PlayerDirection.noneRight;
-    }
+      if (isKeyDown && keyDirection != null) {
+        player.direction = keyDirection;
+      } else if (player.direction == PlayerDirection.up) {
+        player.direction = PlayerDirection.noneUp;
+      } else if (player.direction == PlayerDirection.down) {
+        player.direction = PlayerDirection.noneDown;
+      } else if (player.direction == PlayerDirection.left) {
+        player.direction = PlayerDirection.noneLeft;
+      } else if (player.direction == PlayerDirection.right) {
+        player.direction = PlayerDirection.noneRight;
+      }
+    }    
 
-    for (var i = 0; i < enemies.length; i++) {      
+    for (var i = 0; i < enemies.length; i++) {
       if (event.logicalKey == LogicalKeyboardKey.space
-        && _player.position.distanceToSquared(enemies[i].position) < 12000.0
+        && player.position.distanceToSquared(enemies[i].position) < 12000.0
         && questionShowsUp == false
       ) {
         index = i;
         random = Random().nextInt(questions.length);
         shuffleChoices(random!);
         overlays.add(QuestionBox.id);
+        overlays.add(AnswerPad.id);
         questionShowsUp = true;
         quizCountdown.start();
       }
       if (questionShowsUp == true) {
-        if (event.logicalKey == LogicalKeyboardKey.keyA && hasAnswered == false) {
+        if (event.logicalKey == LogicalKeyboardKey.keyA && selectedAnswer == null) {
           selectedAnswer = choices[random!][0];
-        } else if (event.logicalKey == LogicalKeyboardKey.keyB && hasAnswered == false) {
+        } else if (event.logicalKey == LogicalKeyboardKey.keyB && selectedAnswer == null) {
           selectedAnswer = choices[random!][1];
-        } else if (event.logicalKey == LogicalKeyboardKey.keyC && hasAnswered == false) {
+        } else if (event.logicalKey == LogicalKeyboardKey.keyC && selectedAnswer == null) {
           selectedAnswer = choices[random!][2];
-        } else if (event.logicalKey == LogicalKeyboardKey.keyD && hasAnswered == false) {
+        } else if (event.logicalKey == LogicalKeyboardKey.keyD && selectedAnswer == null) {
           selectedAnswer = choices[random!][3];
-        } 
+        }
         if (hasAnswered == false && selectedAnswer == answers[random!]) {
           quizCountdown.pause();
           points++;
           hasAnswered = true;
         } else if (
-          hasAnswered == false 
+          hasAnswered == false
           && selectedAnswer != answers[random!]
           && (selectedAnswer == choices[random!][0]
           || selectedAnswer == choices[random!][1]
@@ -191,12 +201,13 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
           roundCountdown.pause();
           quizCountdown.pause();
           overlays.remove(QuestionBox.id);
+          overlays.remove(AnswerPad.id);
           overlays.add(PopUpDialog.id);
-          hasAnswered = true;
         }        
         if (selectedAnswer == answers[random!] && event.logicalKey == LogicalKeyboardKey.enter) {
           quizCountdown.stop();
           overlays.remove(QuestionBox.id);
+          overlays.remove(AnswerPad.id);
           diedEnemies.add(enemies[index!]);
           passedQuestions.add(questions[random!]);
           passedChoices.add(choices[random!]);
@@ -207,14 +218,16 @@ class GameCore extends FlameGame with KeyboardEvents, HasCollidables {
           choices.removeAt(random!);
           answers.removeAt(random!);
           quizTime = Rx<double>(10.0);
-          _player.hasCollided = false;
+          player.hasCollided = false;
           questionShowsUp = false;
           hasAnswered = false;
           selectedAnswer = null;
           index = null;
           random = null;
+          // untuk handphone
+          overlays.add(QnAPad.id);
         }
-      }
+      }      
     }
     return super.onKeyEvent(event, keysPressed);
   }

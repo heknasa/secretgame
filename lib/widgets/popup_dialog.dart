@@ -1,5 +1,10 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:goran_game/game_core.dart';
+import 'package:goran_game/helpers/dpad.dart';
+import 'package:goran_game/widgets/qnapad.dart';
 
 class PopUpDialog extends StatelessWidget {
   static const id = 'pop up dialog';
@@ -8,7 +13,6 @@ class PopUpDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {    
-    String? buttonText;
     return Center(
       child: Container(
         decoration: BoxDecoration(
@@ -27,13 +31,29 @@ class PopUpDialog extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   if (gameRef.popUpTitle == 'Ready?') {
+                    var platform = Theme.of(context).platform;
                     gameRef.overlays.remove(PopUpDialog.id);
+                    if (platform == TargetPlatform.android
+                      || platform == TargetPlatform.iOS
+                      || platform == TargetPlatform.windows
+                    ) {
+                      gameRef.overlays.add(DPad.id);
+                      gameRef.overlays.add(QnAPad.id);
+                      gameRef.gamerIsOnMobile = true;
+                    }
+                    else if (
+                      // platform == TargetPlatform.windows
+                      platform == TargetPlatform.macOS
+                      || platform == TargetPlatform.linux
+                    ) {
+                      gameRef.gamerIsOnPC = true;
+                    }
+                    gameRef.overlays.remove(PopUpDialog.id);                                        
                     gameRef.roundCountdown.start();
                   } else if (
                     gameRef.popUpTitle == 'game over...'
                     || gameRef.popUpTitle == 'YOU WIN!!\nPlay Again?'
-                  ) {   
-                    gameRef.overlays.remove(PopUpDialog.id);
+                  ) {                       
                     gameRef.reset();
                   }
                 },
