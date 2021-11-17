@@ -11,7 +11,8 @@ class PopUpDialog extends StatelessWidget {
   const PopUpDialog(this.gameRef, {Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {    
+  Widget build(BuildContext context) {
+    var platform = Theme.of(context).platform;
     return Center(
       child: Container(
         decoration: BoxDecoration(
@@ -29,8 +30,7 @@ class PopUpDialog extends StatelessWidget {
               SizedBox(height: 20.0),
               ElevatedButton(
                 onPressed: () {
-                  if (gameRef.popUpTitle == 'Ready?') {
-                    var platform = Theme.of(context).platform;
+                  if (gameRef.popUpTitle == 'Ready?') {                    
                     gameRef.overlays.remove(PopUpDialog.id);
                     if (platform == TargetPlatform.android
                       || platform == TargetPlatform.iOS                      
@@ -51,8 +51,14 @@ class PopUpDialog extends StatelessWidget {
                   } else if (
                     gameRef.popUpTitle == 'game over...'
                     || gameRef.popUpTitle == 'YOU WIN!!\nPlay Again?'
-                  ) {                       
-                    gameRef.reset();
+                  ) {
+                    if (platform == TargetPlatform.android
+                      || platform == TargetPlatform.iOS                      
+                    ) {
+                      gameRef.overlays.add(DPad.id);
+                      gameRef.overlays.add(QnAPad.id);
+                    }
+                    gameRef.reset();    
                   }
                 },
                 child: Text('YES')
