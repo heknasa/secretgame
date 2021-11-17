@@ -30,6 +30,7 @@ class AnswerPad extends StatelessWidget {
       gameRef.quizCountdown.pause();
       gameRef.points++;
       gameRef.hasAnswered = true;
+      gameRef.answerIsCorrect.value = true;
     } else if (gameRef.hasAnswered == false && gameRef.selectedAnswer != answers[gameRef.random!]) {
       gameRef.popUpTitle = 'game over...';
       gameRef.roundCountdown.pause();

@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
@@ -34,16 +33,15 @@ class PopUpDialog extends StatelessWidget {
                     var platform = Theme.of(context).platform;
                     gameRef.overlays.remove(PopUpDialog.id);
                     if (platform == TargetPlatform.android
-                      || platform == TargetPlatform.iOS
-                      || platform == TargetPlatform.windows
+                      || platform == TargetPlatform.iOS                      
                     ) {
                       gameRef.overlays.add(DPad.id);
                       gameRef.overlays.add(QnAPad.id);
                       gameRef.gamerIsOnMobile = true;
                     }
                     else if (
-                      // platform == TargetPlatform.windows
-                      platform == TargetPlatform.macOS
+                      platform == TargetPlatform.windows
+                      ||platform == TargetPlatform.macOS
                       || platform == TargetPlatform.linux
                     ) {
                       gameRef.gamerIsOnPC = true;

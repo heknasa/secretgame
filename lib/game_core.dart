@@ -39,7 +39,7 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
   ];
   final World _world = World();
   bool gamerIsOnMobile = false;
-  bool gamerIsOnPC = false;
+  bool gamerIsOnPC = false;  
   bool questionShowsUp = false;
   String? selectedAnswer;
   bool hasAnswered = false;
@@ -48,6 +48,7 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
   String? popUpTitle;
   var roundTime = Rx<double>(10.0 * 5 * 1.5);
   var quizTime = Rx<double>(10.0);
+  var answerIsCorrect = false.obs;
   var points = 0.obs;
 
   @override
@@ -137,8 +138,7 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
     final isKeyDown = event is RawKeyDownEvent;
     PlayerDirection? keyDirection;
 
-    // nanti ganti sama onPC
-    if (gamerIsOnMobile == true) {
+    if (gamerIsOnPC == true) {
       if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
         keyDirection = PlayerDirection.up;
       } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
@@ -171,7 +171,6 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
         random = Random().nextInt(questions.length);
         shuffleChoices(random!);
         overlays.add(QuestionBox.id);
-        overlays.add(AnswerPad.id);
         questionShowsUp = true;
         quizCountdown.start();
       }
@@ -189,6 +188,7 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
           quizCountdown.pause();
           points++;
           hasAnswered = true;
+          answerIsCorrect.value = true;
         } else if (
           hasAnswered == false
           && selectedAnswer != answers[random!]
@@ -221,11 +221,10 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
           player.hasCollided = false;
           questionShowsUp = false;
           hasAnswered = false;
+          answerIsCorrect.value = false;
           selectedAnswer = null;
           index = null;
           random = null;
-          // untuk handphone
-          overlays.add(QnAPad.id);
         }
       }      
     }

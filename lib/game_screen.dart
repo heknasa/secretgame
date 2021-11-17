@@ -28,7 +28,7 @@ class _GameScreenState extends State<GameScreen> {
           GameWidget(
             game: game,
             overlayBuilderMap: {
-              DPad.id: (_, GameCore gameRef) => DPad(game: game, alignment: Alignment.bottomLeft, width: width),
+              DPad.id: (_, GameCore gameRef) => DPad(gameRef: game, alignment: Alignment.bottomLeft, width: width),
               QnAPad.id: (_, GameCore gameRef) => QnAPad(gameRef: game, alignment: Alignment.bottomRight, width: width),
               AnswerPad.id: (_, GameCore gameRef) => AnswerPad(gameRef: gameRef, alignment: Alignment.bottomRight, width: width, height: height),
               QuestionBox.id: (_, GameCore gameRef) => QuestionBox(gameRef),
