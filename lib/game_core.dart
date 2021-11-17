@@ -21,6 +21,8 @@ import 'components/world.dart';
 import 'data/quiz.dart';
 import 'package:get/get.dart';
 
+import 'helpers/dpad.dart';
+
 class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, HasCollidables {
   final Player player = Player();
   List<Enemy> enemies = [];
@@ -110,6 +112,10 @@ class GameCore extends FlameGame with KeyboardEvents, MultiTouchTapDetector, Has
       player, 
       worldBounds: Rect.fromLTRB(0, 0, _world.size.x, _world.size.y)
     );
+    if (gamerIsOnMobile == true) {
+      overlays.add(DPad.id);
+      overlays.add(QnAPad.id);
+    }
     roundTime.value = 10.0 * 5 * 1.5;
     roundCountdown.start();
     quizTime.value = 10.0;
